@@ -4,37 +4,42 @@ author: "Lucas Tapia"
 date: "21-06-2021"
 output: html_document
 ---
+
 ```{r}
 library(readxl)
 library(dplyr)
 library(stringr)
 ##se utilisa scipen=999 para que no lea los numeros con notacion cientifica
 options(scipen = 999)
-donaciones <- read_excel("~/GitHub/desafio1/Donaciones_2017.xlsx", 
+donacionesDATA <- read_excel("~/GitHub/desafio1/Donaciones_2017.xlsx", 
     col_types = c("numeric", "date", "text", 
         "numeric", "text", "text", "text", 
         "text", "numeric", "numeric", "numeric", 
         "numeric"))
 ##se seleccionan las columnas de: año, nombre proyecto, donatario, donante, rut y monto total donacion
-donaciones <- donaciones[, c(1, 3, 5, 7, 8, 11)]
+donaciones <- donacionesDATA[, c(1, 3, 5, 7, 8, 11)]
 ##usamos unique() para ver solo nombres de proyectos no repetidos
 paresProyectosDonatarios <- select(donaciones,"NOMBRE DEL PROYECTO", "DONATARIO")
 paresProyectosDonatarios <- unique(paresProyectosDonatarios)
+
 ##se extrae base de datos de proyectos con atributo "nombre region" de link: https://datasocial.ministeriodesarrollosocial.gob.cl/donaciones/proyectos/3
 proyectosDATA <- read_xlsx("DonacionesProyectos.xlsx")
 proyectos1 <- select(proyectosDATA, 'NOMBRE INSTITUCIÓN', 'NOMBRE PROYECTO', 'FECHA APROBACIÓN','NOMBRE REGIÓN(ES)', 'ÁMBITO ACCIÓN')
 proyectos1 <- rename(proyectos1, c("NOMBRE DEL PROYECTO"="NOMBRE PROYECTO"))
 proyectos1 <- rename(proyectos1, c("DONATARIO"="NOMBRE INSTITUCIÓN"))
+
 ##homogenizamos nombres de variables para cruzar informacion
 paresProyectosDonatarios$`NOMBRE DEL PROYECTO` <- str_trim(paresProyectosDonatarios$`NOMBRE DEL PROYECTO`, side = "both")
 proyectos1$`NOMBRE DEL PROYECTO` <- str_trim(proyectos1$`NOMBRE DEL PROYECTO`, side = "both")
 paresProyectosDonatarios$`DONATARIO` <- str_trim(paresProyectosDonatarios$`DONATARIO`, side = "both")
 proyectos1$`DONATARIO` <- str_trim(proyectos1$`DONATARIO`, side = "both")
+
 paresProyectosDonatarios$`NOMBRE DEL PROYECTO` <- toupper(paresProyectosDonatarios$`NOMBRE DEL PROYECTO`)
 proyectos1$`NOMBRE DEL PROYECTO` <- toupper(proyectos1$`NOMBRE DEL PROYECTO`)
 paresProyectosDonatarios$`DONATARIO` <- toupper(paresProyectosDonatarios$`DONATARIO`)
 proyectos1$`DONATARIO` <- toupper(proyectos1$`DONATARIO`)
 proyectos1$`NOMBRE REGIÓN(ES)` <- toupper(proyectos1$`NOMBRE REGIÓN(ES)`)
+
 paresProyectosDonatarios$`NOMBRE DEL PROYECTO` <- chartr('ÁÉÍÓÚÑ','AEIOUN',
                           paresProyectosDonatarios$`NOMBRE DEL PROYECTO`)
 proyectos1$`NOMBRE DEL PROYECTO` <- chartr('ÁÉÍÓÚÑ','AEIOUN',
@@ -45,6 +50,7 @@ proyectos1$`DONATARIO` <- chartr('ÁÉÍÓÚÑ','AEIOUN',
                           proyectos1$`DONATARIO`)
 proyectos1$`NOMBRE REGIÓN(ES)` <- chartr('ÁÉÍÓÚÑ','AEIOUN',
                           proyectos1$`NOMBRE REGIÓN(ES)`)
+
 ##mergedonacionesproyectosaux1 <- merge(paresProyectosDonatarios, proyectos1, by = c("NOMBRE DEL PROYECTO", "DONATARIO"))
 ```
 
@@ -52,11 +58,14 @@ proyectos1$`NOMBRE REGIÓN(ES)` <- chartr('ÁÉÍÓÚÑ','AEIOUN',
 ##install.packages('fuzzywuzzyR')
 ##devtools::install_github(repo = 'mlampros/fuzzywuzzyR')
 ##library(fuzzywuzzyR)
+
 ##se utilizara pyhton para homogenizar nombres segun ratio de fuzzywuzzy
 library(reticulate)
 use_python("/usr/local/bin/python")
+
 ##x <- c("frodo baggins","new yorks","daddy yankee")
 ##y <- c("frodo bag", "new york", "daddy yanke")
+
 x <- proyectos1$`NOMBRE DEL PROYECTO`
 y <- paresProyectosDonatarios$`NOMBRE DEL PROYECTO`
 ##numerox <- as.integer(length(x))
@@ -74,6 +83,7 @@ y <- paresProyectosDonatarios$`NOMBRE DEL PROYECTO`
 ##}
 ##auxi <- as.data.frame(x)
 ##auxi1 <- as.data.frame(y)
+
 ```
 
 
@@ -81,8 +91,12 @@ y <- paresProyectosDonatarios$`NOMBRE DEL PROYECTO`
 ##existen muchos proyectos que son iguales pero con distinto nombre que hay que eliminar
 from fuzzywuzzy import fuzz
 from fuzzywuzzy import process
+```
+
+```{python}
 x = r.x
 y = r.y
+
 contj = -1
 for i in y:
     contj = contj+1
@@ -97,6 +111,7 @@ for i in y:
 x <- as.data.frame(py$x)
 x <- unique(x)
 x <- x$`py$x`
+
 y <- as.data.frame(py$y)
 y <- unique(y)
 y <- y$`py$y`
@@ -114,16 +129,10 @@ for i in x:
     contj = -1
     for j in y:
         contj = contj + 1
-        if  fuzz.ratio(i,j) > 80:
+        if  fuzz.ratio(i,j) > 90:
             y[contj] = x[conti]
             print(f"i= {i} y j= {j}")
             print(f"i= {x[conti]} y j= {y[contj]}")
-```
-
-
-```{python}
-print(y)
-print(x)
 ```
 
 ```{r}
@@ -131,13 +140,88 @@ x <- as.data.frame(py$x)
 y <- as.data.frame(py$y)
 x <- rename(x, c("NOMBRE DEL PROYECTO"="py$x"))
 y <- rename(y, c("NOMBRE DEL PROYECTO"="py$y"))
+mergexy <- merge(x, y, by = c("NOMBRE DEL PROYECTO"))
+##con mergexy nos damos cuenta que solo tenemos 111 coincidencias, ahora veremos que pasa con las 117 restantes
 dataframex <- data.frame(`NOMBRE DEL PROYECTO`=x$`NOMBRE DEL PROYECTO`, donacionesx = 1)
 dataframex <- rename(dataframex, c("NOMBRE DEL PROYECTO"="NOMBRE.DEL.PROYECTO"))
 mergexy2 <- merge(dataframex, y, by = c("NOMBRE DEL PROYECTO"), all.x = TRUE, all.y = TRUE )
-mergexy <- merge(x, y, by = c("NOMBRE DEL PROYECTO"))
+mergexy2 <- filter(mergexy2, is.na(donacionesx))
+mergexy2 <- mergexy2$`NOMBRE DEL PROYECTO`
+
+dataframey <- data.frame(`NOMBRE DEL PROYECTO`=y$`NOMBRE DEL PROYECTO`, donacionesy = 1)
+dataframey <- rename(dataframey, c("NOMBRE DEL PROYECTO"="NOMBRE.DEL.PROYECTO"))
+mergexyXsinmatch <- merge(x, dataframey, by = c("NOMBRE DEL PROYECTO"), all.x = TRUE, all.y = TRUE )
+mergexyXsinmatch <- filter(mergexyXsinmatch, is.na(donacionesy))
+mergexyXsinmatch <- mergexyXsinmatch$`NOMBRE DEL PROYECTO`
+
+##y2 <- paresProyectosDonatarios$`NOMBRE DEL PROYECTO`
+```
+
+```{python}
+y2 = r.y2
+
+contj = -1
+for i in y2:
+    contj = contj+1
+    if fuzz.token_set_ratio("GESTION Y ACOMPANAMIENTO PROYECTOS AMERICA SOLIDARIA CHILE", i)==100:
+        y2[contj] = "GESTION Y ACOMPANAMIENTO PROYECTOS AMERICA SOLIDARIA CHILE 2017"
+        print(f"{y2[contj]}")
+```
+
+```{r}
+##seleccionamos solo los nombre de proyectos para homogenizar
+
+y2 <- as.data.frame(py$y2)
+y2 <- unique(y2)
+y2 <- y2$`py$y2`
+```
+
+```{python}
+mergexyXsinmatch = r.mergexyXsinmatch
+mergexy2 = r.mergexy2
+conti = -1
+for i in mergexyXsinmatch:
+    conti = conti + 1
+    contj = -1
+    for j in mergexy2:
+        contj = contj + 1
+        if  fuzz.token_set_ratio(i,j) == 100:
+            mergexy2[contj] = mergexyXsinmatch[conti]
+            print(f"i= {i} y j= {j}")
+            print(f"i= {mergexyXsinmatch[conti]} y j= {mergexy2[contj]}")
+```
+
+```{r}
+mergexy2 <- as.data.frame(py$mergexy2)
+mergexy2 <- rename(mergexy2, c("NOMBRE DEL PROYECTO"="py$mergexy2"))
+##mergexy2 <- merge(x, mergexy2, by = c("NOMBRE DEL PROYECTO"))
+
+mergexyXsinmatch <- as.data.frame(mergexyXsinmatch)
+mergexyXsinmatch <- rename(mergexyXsinmatch, c("NOMBRE DEL PROYECTO"="mergexyXsinmatch")) 
+
+dataframex2 <- data.frame(`NOMBRE DEL PROYECTO`=mergexyXsinmatch$`NOMBRE DEL PROYECTO`, donacionesx = 1)
+dataframex2 <- rename(dataframex2, c("NOMBRE DEL PROYECTO"="NOMBRE.DEL.PROYECTO")) 
+
+##joinProyectos2 <- merge(mergexyXsinmatch, mergexy2, by = c("NOMBRE DEL PROYECTO"))
+joinProyectos2 <- merge(dataframex2, mergexy2, by = c("NOMBRE DEL PROYECTO"), all.x = TRUE, all.y = TRUE )
+joinProyectos2 <- filter(joinProyectos2, is.na(donacionesx))
+
+joinProyectos2$`NOMBRE DEL PROYECTO`[joinProyectos2$`NOMBRE DEL PROYECTO` == '"CAPACITACION EN TALLERES INTEGRALES DE OFICIO A NNA QUE VIVEN EN CENTROS DE PROTECCION DE SENAME…"'] <- "CAPACITACIONES EN TALLERES INTEGRALES DE OFICIO A LOS NINOS, NINAS Y ADOLESCENTES QUE VIVEN EN CENTROS DE PROTECCION DEL SENAME PARA OCUPAR SUS TIEMPOS DE OCIO, EVITAR LAS MALAS PRACTICAS, DARLES UNA OPORTUNIDAD Y CONTRIBUIR A RECUPERAR SU CONFIANZA Y LA ESPERANZA	"
+joinProyectos2$`NOMBRE DEL PROYECTO`[joinProyectos2$`NOMBRE DEL PROYECTO` == '"PREPARACION PARA LA VIDA INDEPENDIENTE DE LOS NNJ MAS VULNERABLES"'] <- "PREPARACION PARA LA VIDA INDEPENDIENTE DE LOS NNJ MAS VULNERADOS DE LA REGION METROPOLITANA	"
+joinProyectos2$`NOMBRE DEL PROYECTO`[joinProyectos2$`NOMBRE DEL PROYECTO` == "21 PLAZAS"] <- "21 PLAZAS RM"
+joinProyectos2$`NOMBRE DEL PROYECTO`[joinProyectos2$`NOMBRE DEL PROYECTO` == "21 PLAZAS, RM (COLINA, CERRILLOS Y LAMPA)"] <- "21 PLAZAS RM"
+joinProyectos2$`NOMBRE DEL PROYECTO`[joinProyectos2$`NOMBRE DEL PROYECTO` == "APOYO A LA GESTION E INTEGRACION EDUCATIVA DE ALHUE"] <- "GESTION E INTEGRACION EDUCATIVA EN ALHUE"
+joinProyectos2$`NOMBRE DEL PROYECTO`[joinProyectos2$`NOMBRE DEL PROYECTO` == "APOYO A LA INTEGRACION SOCIAL Y LABORAL DE JOVENES CON DISCAPACIDAD COGNITIVA"] <- "PROGRAMA DE INCLUSION LABORAL DE JOVENES CON DISCAPACIDAD COGNITIVA LEVE-MODERADA"
+joinProyectos2$`NOMBRE DEL PROYECTO`[joinProyectos2$`NOMBRE DEL PROYECTO` == "APOYO AL EMPRENDIMENTO LAFQUENCHE DE TIRUA"] <- "APOYO AL EMPRENDIMIENTO LAFQUENCHE DE TIRUA: “FRAMBUESAS, FENMAMELL TRIRWA WILLI (FRUTOS DEL ARBOL TIRUA SUR”)"
+joinProyectos2$`NOMBRE DEL PROYECTO`[joinProyectos2$`NOMBRE DEL PROYECTO` == "APOYO AL EMPRENDIMIENTO AGROPECUARIO 30 FAMILIAS COLLIPULLI HUAPITRIO"] <- "APOYO EMPRENDIMIENTO AGROPECUARIO DE 30 FAMILIAS MAPUCHES DEL SECTOR HUAPITRIO, DE LA COMUNA DE COLLIPULLI"
+joinProyectos2$`NOMBRE DEL PROYECTO`[joinProyectos2$`NOMBRE DEL PROYECTO` == "21 PLAZAS, RM (COLINA, CERRILLOS Y LAMPA)"] <- "21 PLAZAS RM"
+
 joinProyectos <- merge(mergexy, proyectos1, by = c("NOMBRE DEL PROYECTO"))
+
+
 library(tidyverse)
 joinProyectos <- separate(joinProyectos, `NOMBRE REGIÓN(ES)`, into = c("Región 1", "Región 2", "Región 3","Región 4", "Región 5", "Región 6","Región 7", "Región 8", "Región 9","Región 10", "Región 11", "Región 12","Región 13", "Región 14", "Región 15"), sep = ",")
+
 ```
 
 ```{r}
@@ -153,6 +237,7 @@ library("junr")
 # Descargamos datos del pib regional
 base_url <- "https://api.datos.observatoriologistico.cl/api/v2/datastreams/"
 dataOBSLog <- get_data(base_url, api_key,"POBLA-DE-CHILE-2002-2020")
+
 dataOBSLog <- rename(dataOBSLog, c("NOMBRE REGIÓN(ES)"="REGIÓN"))
 dataOBSLog <- filter(dataOBSLog, AÑO==2004)
 dataOBSLog$`NOMBRE REGIÓN(ES)` <- toupper(dataOBSLog$`NOMBRE REGIÓN(ES)`)
@@ -160,19 +245,26 @@ dataOBSLog$`NOMBRE REGIÓN(ES)` <- chartr('ÁÉÍÓÚÑ','AEIOUN',
                           dataOBSLog$`NOMBRE REGIÓN(ES)`)
 dataOBSLog$POBLACIÓN <- gsub('[,]', '', dataOBSLog$POBLACIÓN)
 dataOBSLog$POBLACIÓN <- as.numeric(dataOBSLog$POBLACIÓN)
+
 dataOBSLog1 <- summarise(group_by(dataOBSLog, `NOMBRE REGIÓN(ES)`),POBLACIÓN = sum(POBLACIÓN), n = n())
+
 dataOBSLog1$`NOMBRE REGIÓN(ES)` <- 
   gsub('AYSEN DEL GENERAL CARLOS IBANEZ DEL CAMPO', 'AYSEN DEL GRAL. CARLOS IBANEZ DEL CAMPO', dataOBSLog1$`NOMBRE REGIÓN(ES)`)
 dataOBSLog1$`NOMBRE REGIÓN(ES)` <- 
   gsub("LIBERTADOR GENERAL BERNARDO O'HIGGINS", "LIBERTADOR GRAL.BERNARDO O’HIGGINS", dataOBSLog1$`NOMBRE REGIÓN(ES)`)
+
 ##se agrega mergedonacionesproyecto1 por si hay algun error en el desarrollo
 library(reshape2)
 joinProyectosLong <- melt(joinProyectos, id.vars = c("NOMBRE DEL PROYECTO", "DONATARIO", "FECHA APROBACIÓN", "ÁMBITO ACCIÓN"))
+
 joinProyectosLong$value <- str_trim(joinProyectosLong$`value`, side = "both")
+
 ##listaregiones <- unique(mergedonacionesproyectos1[,c(1,10)])
 joinProyectosWide <- dcast(joinProyectosLong, formula = `NOMBRE DEL PROYECTO`+DONATARIO+`FECHA APROBACIÓN`+`ÁMBITO ACCIÓN` ~ value, fun.aggregate = length)
+
+
 ```
 
 ```{python}
-fuzz.ratio( "PREPARACION PARA LA VIDA INDEPENDIENTE DE LOS NNJ MAS VULNERABLES"	 , "PREPARACION PARA LA VIDA INDEPENDIENTE DE LOS NNJ MAS VULNERADOS DE LA REGION METROPOLITANA")
+fuzz.ratio( "001 PANALES"	 , "PANALES")
 ```
