@@ -41,6 +41,7 @@ paresProyectosDonatarios$`DONATARIO` <- toupper(paresProyectosDonatarios$`DONATA
 proyectos1$`DONATARIO` <- toupper(proyectos1$`DONATARIO`)
 proyectos1$`NOMBRE REGIÓN(ES)` <- toupper(proyectos1$`NOMBRE REGIÓN(ES)`)
 #Con chartr() reemplazamos los caracteres con tildes y la Ñ por N
+
 paresProyectosDonatarios$`NOMBRE DEL PROYECTO` <- chartr('ÁÉÍÓÚÑ','AEIOUN',
                           paresProyectosDonatarios$`NOMBRE DEL PROYECTO`)
 proyectos1$`NOMBRE DEL PROYECTO` <- chartr('ÁÉÍÓÚÑ','AEIOUN',
