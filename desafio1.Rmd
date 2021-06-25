@@ -265,6 +265,9 @@ resultado2 <- melt(resultado2, id.vars = c("NOMBRE DEL PROYECTO"))
 resultado2 <- resultado2[,c(2,3)]
 resultado2 <- summarise(group_by(resultado2, `variable`), value = sum(value), `total de proyectos`=n())
 resultado2$`Proporcion con el pais` <- (resultado2$value/resultado2$`total de proyectos`)*100
+resultado2 <- resultado2[,c(1,2,4)]
+resultado2 <- rename(resultado2, c("numero de proyectos"="value"))
+resultado2 <- rename(resultado2, c("Región"="variable"))
 #3: Podemos ver la población potencial de impacto de cada proyecto.
 resultado3 <- select(joinProyectosWide, `NOMBRE DEL PROYECTO`, `POBLACION DE IMPACTO`)
 #4: Podemos ver la población potencial por cada donatario según sus proyectos.
